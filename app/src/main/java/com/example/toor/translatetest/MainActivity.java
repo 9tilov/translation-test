@@ -1,23 +1,26 @@
 package com.example.toor.translatetest;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ObjectAnimator;
-import android.graphics.Path;
+import android.graphics.Point;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Display;
 import android.view.MotionEvent;
-import android.view.View;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
+
+import static com.example.toor.translatetest.AnimationUtils.translate;
 
 public class MainActivity extends AppCompatActivity {
 
     ImageView btnView;
-
-    private static final int RADIUS = 150;
-    private static final long DURATION = 1000;
-    private boolean isAnimation = false;
+    private int screenWidth;
+    private int screenHeight;
+    @NonNull
+    private Coords carLastCoords = new Coords(0f, 0f);
+    @Nullable
+    private RetainedFragment dataFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,44 +28,61 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         btnView = findViewById(R.id.iv_car);
+        getScreenSize();
+
+        FragmentManager fm = getSupportFragmentManager();
+        dataFragment = (RetainedFragment) fm.findFragmentByTag(RetainedFragment.TAG);
+        if (dataFragment == null) {
+            dataFragment = new RetainedFragment();
+            fm.beginTransaction().add(dataFragment, RetainedFragment.TAG).commit();
+            dataFragment.setData(getRelativeCoords());
+        } else {
+            initView(dataFragment.getData());
+        }
+
+    }
+
+    private void getScreenSize() {
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        this.screenWidth = size.x;
+        this.screenHeight = size.y;
+    }
+
+    private void initView(@NonNull Coords coords) {
+        carLastCoords = getAbsoluteCoords(coords);
+        btnView.setX(carLastCoords.getX());
+        btnView.setY(carLastCoords.getY());
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case (MotionEvent.ACTION_DOWN):
-                if (!isAnimation) {
-                    translate(btnView, event.getX() - btnView.getWidth() / 2, event.getY() - 2 * btnView.getHeight());
-                }
+                Coords newCoords = new Coords(event.getX() - btnView.getWidth() / 2, event.getY() - btnView.getHeight());
+                this.carLastCoords = newCoords;
+                translate(btnView, newCoords);
                 return true;
             default:
                 return super.onTouchEvent(event);
         }
     }
 
-    private void translate(View view, float toX, float toY) {
-        Path path = new Path();
-        path.moveTo(view.getX(), view.getY());
-        path.cubicTo(view.getX(), view.getY(),
-                view.getX() + RADIUS, view.getY() + RADIUS,
-                toX, toY);
-        ObjectAnimator objectAnimator =
-                ObjectAnimator.ofFloat(view, View.X, View.Y, path);
-        objectAnimator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                super.onAnimationStart(animation);
-                isAnimation = true;
-            }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (dataFragment != null) {
+            dataFragment.setData(getRelativeCoords());
+        }
+    }
 
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-                isAnimation = false;
-            }
-        });
-        objectAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
-        objectAnimator.setDuration(DURATION);
-        objectAnimator.start();
+    @NonNull
+    private Coords getRelativeCoords() {
+        return new Coords(carLastCoords.getX() / screenWidth, carLastCoords.getY() / screenHeight);
+    }
+
+    private Coords getAbsoluteCoords(@NonNull Coords coords) {
+        return new Coords(coords.getX() * screenWidth, coords.getY() * screenHeight);
     }
 }
