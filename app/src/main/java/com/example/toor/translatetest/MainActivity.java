@@ -8,17 +8,17 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Display;
 import android.view.MotionEvent;
-import android.widget.ImageView;
+import android.view.View;
 
 import static com.example.toor.translatetest.AnimationUtils.translate;
 
 public class MainActivity extends AppCompatActivity {
 
-    ImageView btnView;
+    private View btnView;
     private int screenWidth;
     private int screenHeight;
     @NonNull
-    private Coords carLastCoords = new Coords(0f, 0f);
+    private CarPosition carLastCarPosition = new CarPosition(0f, 0f, 0f);
     @Nullable
     private RetainedFragment dataFragment;
 
@@ -50,23 +50,36 @@ public class MainActivity extends AppCompatActivity {
         this.screenHeight = size.y;
     }
 
-    private void initView(@NonNull Coords coords) {
-        carLastCoords = getAbsoluteCoords(coords);
-        btnView.setX(carLastCoords.getX());
-        btnView.setY(carLastCoords.getY());
+    private void initView(@NonNull CarPosition carPosition) {
+        carLastCarPosition = getAbsoluteCoords(carPosition);
+        btnView.setX(carLastCarPosition.getX());
+        btnView.setY(carLastCarPosition.getY());
+        btnView.setRotation(carLastCarPosition.getAngel());
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case (MotionEvent.ACTION_DOWN):
-                Coords newCoords = new Coords(event.getX() - btnView.getWidth() / 2, event.getY() - btnView.getHeight());
-                this.carLastCoords = newCoords;
-                translate(btnView, newCoords);
+                float newX = event.getX() - btnView.getWidth() / 2;
+                float newY = event.getY() - btnView.getHeight() / 2;
+                float angel = MathUtils.getRotationAngel(btnView.getX(), btnView.getY(), newX, newY);
+                CarPosition newCarPosition = new CarPosition(newX, newY, angel);
+                translate(btnView, carLastCarPosition, newCarPosition);
+                this.carLastCarPosition = newCarPosition;
                 return true;
             default:
-                return super.onTouchEvent(event);
+                return true;
         }
+    }
+
+    @NonNull
+    private CarPosition getRelativeCoords() {
+        return new CarPosition(carLastCarPosition.getX() / screenWidth, carLastCarPosition.getY() / screenHeight, carLastCarPosition.getAngel());
+    }
+
+    private CarPosition getAbsoluteCoords(@NonNull CarPosition carPosition) {
+        return new CarPosition(carPosition.getX() * screenWidth, carPosition.getY() * screenHeight, carPosition.getAngel());
     }
 
     @Override
@@ -75,14 +88,5 @@ public class MainActivity extends AppCompatActivity {
         if (dataFragment != null) {
             dataFragment.setData(getRelativeCoords());
         }
-    }
-
-    @NonNull
-    private Coords getRelativeCoords() {
-        return new Coords(carLastCoords.getX() / screenWidth, carLastCoords.getY() / screenHeight);
-    }
-
-    private Coords getAbsoluteCoords(@NonNull Coords coords) {
-        return new Coords(coords.getX() * screenWidth, coords.getY() * screenHeight);
     }
 }

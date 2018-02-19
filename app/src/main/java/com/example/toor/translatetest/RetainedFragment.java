@@ -10,7 +10,7 @@ public class RetainedFragment extends Fragment {
     public static final String TAG = "RetainedFragment";
 
     @NonNull
-    private Coords relativeCoords = new Coords(0f, 0f);
+    private CarPosition relativeCarPosition = new CarPosition(0f, 0f, 0f);
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -19,13 +19,13 @@ public class RetainedFragment extends Fragment {
     }
 
     @NonNull
-    public Coords getData() {
-        return relativeCoords;
+    public CarPosition getData() {
+        return relativeCarPosition;
     }
 
-    public void setData(@Nullable Coords relativeCoords) {
-        if (relativeCoords != null) {
-            this.relativeCoords = relativeCoords;
+    public void setData(@Nullable CarPosition relativeCarPosition) {
+        if (relativeCarPosition != null) {
+            this.relativeCarPosition = relativeCarPosition;
         }
     }
 }
